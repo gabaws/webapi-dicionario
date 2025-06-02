@@ -6,7 +6,7 @@ import uvicorn
 def create_app() -> FastAPI:
     app = FastAPI(
         title="API Dicionário de Dados",
-        description="Esta API tem a finalidade de registrar, editar e deletar schemas e tabelas.",
+        description="Esta API tem a finalidade de registrar, editar e deletar conectores, schemas e tabelas.",
         version="0.1.0"
     )
 
