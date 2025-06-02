@@ -1,0 +1,28 @@
+# Virtual environment
+venv/
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache
+
+# Logs
+*.log
+
+# Byte-compiled / optimized / DLL files
+*.so
+*.dll
+*.dylib
+
+# IDEs
+.vscode/
+.idea/
+
+# Others
+*.db
+*.sqlite3
+docker-compose.yaml
+sonar-project.properties
