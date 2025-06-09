@@ -1,1 +1,0 @@
-{"usuarios": [{"column": "id", "type": "int", "length": null, "nullable": "False", "is_primary_key": true, "is_foreign_key": false, "references": null}, {"column": "email", "type": "string", "length": 320, "nullable": "True", "is_primary_key": false, "is_foreign_key": false, "references": null}]}
