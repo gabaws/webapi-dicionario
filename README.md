@@ -1,133 +1,247 @@
-## 🌐 WebAPI Dictionary
+# 🚀 API Dicionário de Dados
 
-Esta Web API permite criar, atualizar, consultar e deletar schemas compostos por múltiplas tabelas e colunas, com persistência em um banco MongoDB. A interface é baseada em FastAPI e aceita uploads de arquivos JSON contendo a estrutura do schema.
+> ✨ **Sistema de Gerenciamento de Conectores e Schemas de Banco de Dados**
 
+Uma API REST moderna construída com FastAPI para gerenciar conectores de banco de dados PostgreSQL e schemas de dados de forma segura e eficiente.
 
-🚀 Funcionalidades :
+## 📋 Índice
 
-----------------------------------------------------------------------------------------------------------------------------
+- [🎯 Sobre o Projeto](#-sobre-o-projeto)
+- [🛠️ Tecnologias Utilizadas](#️-tecnologias-utilizadas)
+- [🏗️ Arquitetura do Projeto](#️-arquitetura-do-projeto)
+- [🚀 Como Executar](#-como-executar)
+- [📚 Documentação da API](#-documentação-da-api)
+- [🔧 Configuração](#-configuração)
+- [📁 Estrutura do Projeto](#-estrutura-do-projeto)
+- [🔐 Segurança](#-segurança)
+- [🧪 Funcionalidades](#-funcionalidades)
 
-📥 **POST / – Criar novo schema via JSON**
+## 🎯 Sobre o Projeto
 
-Cria um schema completo a partir de um arquivo .json contendo o dicionário de dados.
+Esta aplicação é um **Dicionário de Dados** que permite:
 
-📎 Entrada: Upload de arquivo .json + nome do schema (nome_schema)
+- 🔌 **Gerenciar Conectores**: Cadastrar, testar e gerenciar conexões com bancos PostgreSQL
+- 📊 **Gerenciar Schemas**: Upload, validação e gestão de schemas de dados em formato JSON
+- 🔒 **Segurança**: Criptografia de senhas e validação de dados
+- 📝 **Documentação Automática**: Swagger/OpenAPI integrado
+- 🗄️ **Persistência**: Armazenamento em MongoDB
 
-✅ Validações: Verifica extensão, valida o JSON e estrutura esperada (Dict[str, List[Column]])
+## 🛠️ Tecnologias Utilizadas
 
-🧾 Persistência: Insere no MongoDB
+| Tecnologia | Versão | Propósito |
+|------------|--------|-----------|
+| 🐍 **Python** | 3.8+ | Linguagem principal |
+| ⚡ **FastAPI** | Latest | Framework web moderno |
+| 🗄️ **MongoDB** | - | Banco de dados NoSQL |
+| 🐘 **PostgreSQL** | - | Banco de dados relacional |
+| 🔐 **Cryptography** | - | Criptografia de senhas |
+| 📋 **Pydantic** | - | Validação de dados |
+| 🎨 **Uvicorn** | - | Servidor ASGI |
+| 📄 **JSON Schema** | - | Validação de schemas |
 
-🔁 Retorno: ID do documento criado
-
------------------------------------------------------------------------------------------------------------------------------
-
-🔍 **GET /{nome_schema} – Consultar schema**
-
-Recupera um schema completo salvo no banco, identificado pelo seu nome_schema.
-
-🔎 Busca pelo nome do schema
-
-📤 Retorno: Estrutura do schema com suas tabelas e colunas
-
------------------------------------------------------------------------------------------------------------------------------
-
-📝 **PUT /{nome_schema} – Atualizar schema via JSON**
-
-Atualiza um schema existente com um novo arquivo .json, podendo também renomeá-lo.
-
-📎 Entrada: Upload de novo .json + (opcional) novo nome (novo_nome_schema)
-
-🧪 Validação: Estrutura do JSON
-
-🔁 Retorno: Mensagem de sucesso ou erro
-
------------------------------------------------------------------------------------------------------------------------------
-
-🗑️ **DELETE /{nome_schema} – Deletar schema**
-
-Remove permanentemente um schema com base no nome_schema.
-
-⚠️ Ação irreversível
-
-✅ Retorno: Mensagem de confirmação
-
------------------------------------------------------------------------------------------------------------------------------
-
-🔧 **PATCH /{nome_schema}/{nome_tabela}/{nome_coluna} – Atualizar coluna específica**
-
-Atualiza os dados de uma única coluna dentro de uma tabela específica em um schema.
-
-🎯 Entrada: Objeto Column no body
-
-🧠 Lógica: Substitui a coluna antiga pela nova
-
-✅ Retorno: Confirmação de atualização
-
------------------------------------------------------------------------------------------------------------------------------
-```
-.                                       # Raiz do projeto
-├── README.md                           # Documento com instruções e informações do projeto
-├── app                                 # Diretório principal da aplicação
-│   ├── api                             # Camada de API da aplicação
-│   │   ├── __init__.py                 # Torna o diretório um pacote Python
-│   │   └── v1                          # Versão 1 da API (permite versionamento da API)
-│   │       ├── __init__.py             # Inicializa o pacote da versão
-│   │       └── endpoints               # Define os endpoints (rotas) da API
-│   │           ├── __init__.py         # Inicializa o pacote de endpoints
-│   │           └── dicionariodados.py  # Rotas para manipular o dicionário de dados (CRUD de schemas e colunas)
-│   ├── core                            # Configurações centrais e utilitários da aplicação
-│   │   ├── __init__.py                 # Inicializa o pacote
-│   │   └── config.py                   # Importa as variaveis de ambiente
-│   ├── db                              # Camada de acesso ao banco de dados
-│   │   ├── __init__.py                 # Inicializa o pacote
-│   │   ├── crud.py                     # Controla a inserção do esquema de tabelas (CRUD)
-│   │   └── mongo.py                    # Gerencia a conexão com o banco de dados MongoDB
-│   ├── main.py                         # Ponto de entrada da aplicação FastAPI
-│   └── models                          # Modelos Pydantic usados para validação de dados
-│       ├── __init__.py                 # Inicializa o pacote
-│       └── schemas.py                  # Estrutura esperada dos dados (colunas de tabelas, etc.)
-├── docker-compose.yaml                 # Arquivo de orquestração Docker (define os serviços e dependências)
-├── requirements.txt                    # Lista de dependências Python do projeto (instaladas com pip)
-├── sonar-project.properties            # Arquivo de configuração para análise de código com o SonarQube
-└── tests                               # Testes automatizados para a API
-    ├── __init__.py                     # Inicializa o pacote de testes
-    ├── schema_atualizado.json          # Schema JSON usado em testes de atualização
-    ├── schema_temp.json                # Schema JSON temporário usado em testes
-    └── test_dicionariodados.py         # Testes dos endpoints do dicionário de dados
+## 🏗️ Arquitetura do Projeto
 
 ```
------------------------------------------------------------------------------------------------------------------------------
+webapi-dicionario/
+├── 📁 app/
+│   ├── 🚀 main.py                 # Ponto de entrada da aplicação
+│   ├── 📁 api/                    # Camada de API
+│   │   └── 📁 v1/endpoints/       # Endpoints da API
+│   ├── 📁 core/                   # Configurações centrais
+│   ├── 📁 db/                     # Camada de dados
+│   │   └── 📁 crud/               # Operações CRUD
+│   ├── 📁 models/                 # Modelos de dados
+│   │   └── 📁 domain/             # Modelos de domínio
+│   ├── 📁 services/               # Lógica de negócio
+│   └── 📁 utils/                  # Utilitários
+├── 📄 requirements.txt            # Dependências Python
+└── 📖 README.md                   # Este arquivo
+```
 
-## 🚀 Bibliotecas utilizadas na WebAPI 
+## 🚀 Como Executar
 
-### 1. **fastapi** ⚡  
-Framework web moderno, rápido e leve para construir APIs RESTful com Python.  
-**Papel na API:** Serve como base para criar rotas, manipular requisições HTTP, validar dados automaticamente com Pydantic e fornecer documentação automática da API.
+### 📋 Pré-requisitos
 
-### 2. **uvicorn[standard]** 🚀  
-Servidor ASGI baseado em asyncio para rodar aplicações Python, especialmente FastAPI e Starlette.  
-**Papel na API:** Executa a aplicação FastAPI em um servidor web assíncrono, possibilitando alta performance e suporte a operações concorrentes.
+- Python 3.8 ou superior
+- MongoDB instalado e rodando
+- PostgreSQL (para testes de conexão)
 
-### 3. **pymongo** 🍃  
-Driver oficial do MongoDB para Python, permitindo conexão e manipulação dos dados armazenados no MongoDB.  
-**Papel na API:** Facilita o acesso, consulta, inserção, atualização e exclusão de documentos no banco de dados MongoDB.
+### 🔧 Instalação
 
-### 4. **python-dotenv** 🌿  
-Biblioteca para carregar variáveis de ambiente a partir de arquivos `.env`.  
-**Papel na API:** Permite a configuração da aplicação via variáveis externas, como strings de conexão, chaves secretas e outras configurações sensíveis, sem expor diretamente no código.
+1. **Clone o repositório**
+```bash
+git clone <url-do-repositorio>
+cd webapi-dicionario
+```
 
-### 5. **python-multipart** 📦  
-Biblioteca para lidar com dados de formulários do tipo `multipart/form-data` em requisições HTTP, especialmente uploads de arquivos.  
-**Papel na API:** Necessária para processar corretamente uploads de arquivos JSON, usados para criar e atualizar schemas via upload na API.
+2. **Crie um ambiente virtual**
+```bash
+python -m venv venv
+```
 
-### 6. **pytest** 🧪  
-Framework de testes para Python, utilizado para escrever e rodar testes automatizados.  
-**Papel na API:** Utilizado para garantir que os endpoints da API funcionem conforme esperado, ajudando na manutenção e qualidade do código.
+3. **Ative o ambiente virtual**
+```bash
+# Windows
+venv\Scripts\activate
 
-### 7. **pytest-asyncio** ⚙️  
-Plugin do pytest que adiciona suporte para testar funções assíncronas (`async def`).  
-**Papel na API:** Permite testar endpoints assíncronos do FastAPI, que usam async/await para maior desempenho.
+# Linux/Mac
+source venv/bin/activate
+```
 
-### 8. **httpx** 🌐  
-Cliente HTTP para Python com suporte a requisições síncronas e assíncronas.  
-**Papel na API:** Usado nos testes para simular requisições HTTP contra a API, verificando o comportamento real dos endpoints.
+4. **Instale as dependências**
+```bash
+pip install -r requirements.txt
+```
+
+5. **Configure as variáveis de ambiente**
+```bash
+# Crie um arquivo .env na raiz do projeto
+MONGO_URL=mongodb://localhost:27017
+DB_NAME=dicionario_dados
+MONGO_COLLECTION_SCHEMAS=schemas
+MONGO_COLLECTION_CONECTORES=conectores
+CRYPTO_KEY=sua_chave_secreta_aqui
+```
+
+6. **Execute a aplicação**
+```bash
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+## 📚 Documentação da API
+
+Após iniciar a aplicação, acesse:
+
+- 📖 **Swagger UI**: http://localhost:8000/docs
+- 📄 **ReDoc**: http://localhost:8000/redoc
+
+### 🔌 Endpoints de Conectores
+
+| Método | Endpoint | Descrição |
+|--------|----------|-----------|
+| `POST` | `/dicionariodados/connectors/test` | Testa conexão com PostgreSQL |
+| `POST` | `/dicionariodados/connectors/` | Cadastra novo conector |
+| `GET` | `/dicionariodados/connectors/` | Lista todos os conectores |
+| `GET` | `/dicionariodados/connectors/{nome}` | Busca conector por nome |
+| `PUT` | `/dicionariodados/connectors/{nome}` | Atualiza conector |
+| `DELETE` | `/dicionariodados/connectors/{nome}` | Remove conector |
+
+### 📊 Endpoints de Schemas
+
+| Método | Endpoint | Descrição |
+|--------|----------|-----------|
+| `POST` | `/dicionariodados/schemas/upload` | Upload de schema via arquivo |
+| `PUT` | `/dicionariodados/schemas/{nome_schema}` | Atualiza schema |
+| `DELETE` | `/dicionariodados/schemas/{nome_schema}` | Remove schema |
+| `PATCH` | `/dicionariodados/schemas/{nome_schema}/tabelas/{tabela}` | Atualiza tabela específica |
+| `GET` | `/dicionariodados/schemas/` | Lista todos os schemas |
+| `GET` | `/dicionariodados/schemas/{nome_schema}` | Obtém schema específico |
+
+## 🔧 Configuração
+
+### 🔐 Variáveis de Ambiente
+
+```env
+# MongoDB
+MONGO_URL=mongodb://localhost:27017
+DB_NAME=dicionario_dados
+MONGO_COLLECTION_SCHEMAS=schemas
+MONGO_COLLECTION_CONECTORES=conectores
+
+# Criptografia
+CRYPTO_KEY=sua_chave_secreta_aqui
+```
+
+## 📁 Estrutura Detalhada do Projeto
+
+### 🚀 **app/main.py**
+- Ponto de entrada da aplicação FastAPI
+- Configuração de rotas e documentação
+- Redirecionamento automático para `/docs`
+
+### 📁 **app/api/v1/endpoints/**
+- **connectors.py**: Endpoints para gerenciamento de conectores
+- **schemas.py**: Endpoints para gerenciamento de schemas
+
+### 📁 **app/core/**
+- **config.py**: Configurações da aplicação
+- **logging.py**: Configuração de logs
+
+### 📁 **app/db/**
+- **mongo.py**: Conexão com MongoDB
+- **crud/**: Operações de banco de dados
+  - **connectors.py**: CRUD para conectores
+  - **schemas.py**: CRUD para schemas
+
+### 📁 **app/models/**
+- **domain/**: Modelos de domínio
+  - **connectors.py**: Modelos para conectores
+  - **schemas.py**: Modelos para schemas
+- **responses.py**: Modelos de resposta da API
+
+### 📁 **app/services/**
+- **connector_service.py**: Lógica de teste de conexão PostgreSQL
+- **schema_service.py**: Validação de schemas JSON
+
+### 📁 **app/utils/**
+- **crypto.py**: Criptografia de senhas
+- **json_validator.py**: Validação de JSON
+
+## 🔐 Segurança
+
+### 🔒 Criptografia de Senhas
+- Utiliza **Fernet** (cryptography) para criptografia
+- Senhas são criptografadas antes de salvar no banco
+- Chave de criptografia configurável via variável de ambiente
+
+### ✅ Validação de Dados
+- **Pydantic** para validação de entrada
+- Validação de formato de host (IP ou domínio)
+- Validação de schemas JSON
+- Sanitização de dados
+
+## 🧪 Funcionalidades
+
+### 🔌 **Gerenciamento de Conectores**
+- ✅ Cadastro de conectores PostgreSQL
+- ✅ Teste de conexão em tempo real
+- ✅ Validação de credenciais
+- ✅ Criptografia de senhas
+- ✅ CRUD completo (Create, Read, Update, Delete)
+
+### 📊 **Gerenciamento de Schemas**
+- ✅ Upload de schemas via arquivo JSON
+- ✅ Validação de estrutura JSON
+- ✅ Gerenciamento de tabelas e colunas
+- ✅ Suporte a chaves primárias e estrangeiras
+- ✅ Constraints e descrições
+
+### 🔍 **Recursos Adicionais**
+- ✅ Documentação automática (Swagger/OpenAPI)
+- ✅ Logs estruturados
+- ✅ Tratamento de erros
+- ✅ Validação de entrada
+- ✅ Respostas padronizadas
+
+## 🤝 Contribuição
+
+1. Faça um fork do projeto
+2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
+3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
+4. Push para a branch (`git push origin feature/AmazingFeature`)
+5. Abra um Pull Request
+
+## 📄 Licença
+
+Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+
+## 👨‍💻 Autor
+
+**Geração de Dados**
+- 📧 Email: [seu-email@exemplo.com]
+- 🔗 LinkedIn: [seu-linkedin]
+- 🐙 GitHub: [seu-github]
+
+---
+
+⭐ **Se este projeto te ajudou, considere dar uma estrela!** ⭐

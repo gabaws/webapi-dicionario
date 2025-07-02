@@ -7,6 +7,10 @@ class Reference(BaseModel):
     column: str
 
 
+class CheckConstraint(BaseModel):
+    expression: str
+
+
 class Column(BaseModel):
     column: str
     type: str
@@ -16,9 +20,23 @@ class Column(BaseModel):
     is_foreign_key: bool
     is_unique: bool
     references: Optional[Reference] = None
+    check_constraint: Optional[CheckConstraint] = None
     description: Optional[str] = None
 
 
+class TabelaComDependencias(BaseModel):
+    columns: List[Column]
+    depends_on: List[str]
+
+
 class SchemaDoc(BaseModel):
-    nome_schema: str = Field(..., example="public")
-    tabelas: Dict[str, List[Column]]
+    nome_schema: str = Field(...)
+    tabelas: Dict[str, TabelaComDependencias]
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "nome_schema": "public",
+                "tabelas": {}
+            }
+        }
