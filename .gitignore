@@ -1,6 +1,38 @@
 # Virtual environment
 venv/
 .env
+.json
+# Docker
+Dockerfile
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache
+
+# Logs
+*.log
+
+# Byte-compiled / optimized / DLL files
+*.so
+*.dll
+*.dylib
+
+# IDEs
+.vscode/
+.idea/
+
+# Others
+*.db
+*.sqlite3
+docker-compose.yaml
+sonar-project.properties
+
+# Virtual environment
+venv/
+.env
+.json
 
 # Docker
 Dockerfile
