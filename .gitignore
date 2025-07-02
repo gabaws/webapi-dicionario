@@ -1,7 +1,6 @@
 # Virtual environment
 venv/
 .env
-.json
 
 # Docker
 Dockerfile
