@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional
 import re
 
@@ -11,7 +11,8 @@ class ConnectorIn(BaseModel):
     usuario: str
     senha: Optional[str] = Field(default=None, min_length=8)
 
-    @validator("host")
+    @field_validator("host")
+    @classmethod
     def validar_host(cls, v):
         if not re.match(r"^((?!-)[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*|(\d{1,3}\.){3}\d{1,3})$", v):
             raise ValueError("Host inválido")

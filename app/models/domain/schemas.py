@@ -33,10 +33,11 @@ class SchemaDoc(BaseModel):
     nome_schema: str = Field(...)
     tabelas: Dict[str, TabelaComDependencias]
 
-    class Config:
-        schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "nome_schema": "public",
                 "tabelas": {}
             }
         }
+    }
