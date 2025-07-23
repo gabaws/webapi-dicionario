@@ -1,0 +1,12 @@
+{
+    "nome_schema": "schema_teste",
+    "tabelas": [
+        {
+            "nome": "tabela1",
+            "colunas": [
+                {"nome": "id", "tipo": "int", "nullable": false},
+                {"nome": "nome", "tipo": "varchar", "nullable": false}
+            ]
+        }
+    ]
+} 

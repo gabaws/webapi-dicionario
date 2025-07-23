@@ -1,0 +1,47 @@
+# Diretórios comuns a ignorar
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+*.sqlite3
+*.db
+*.egg-info/
+.env
+.venv/
+venv/
+build/
+dist/
+tmp/
+output/
+tests/
+test/
+.coverage
+.tox/
+.idea/
+.vscode/
+.mypy_cache/
+.cache/
+.dockerignore
+.git/
+.gitignore
+docker-compose.yml
+docker-compose.override.yml
+.env.example
+sonar-project.properties
+LICENSE
+.gitlab-ci.yml
+db-init/
+README.md
+
+
+# Arquivos de sistema
+.DS_Store
+Thumbs.db
+
+# Arquivos de variáveis/sigilos
+.env*
+secrets/
+*.pem
+*.key
+*.crt

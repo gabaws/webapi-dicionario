@@ -1,0 +1,8 @@
+{
+    "nome": "conector_teste",
+    "host": "localhost",
+    "porta": 5432,
+    "banco": "microservicos",
+    "usuario": "postgres_docker",
+    "senha": "postgres_docker"
+}

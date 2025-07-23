@@ -1,63 +1,126 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from app.models.domain.connectors import ConnectorIn, ConnectorOut
-from app.models.responses import MessageResponse
+from app.models.responses import MessageResponse, ConnectorCreateResponse
 from app.db.mongo import conectores_collection
 from app.db.crud import connectors as crud
 from app.services.connector_service import testar_conexao_postgres
-from app.utils.crypto import encrypt_password, decrypt_password
+from app.utils.crypto import encrypt_password
 from app.core.logging import logger
+from typing import List
 
 router = APIRouter()
 
-@router.post("/connectors/test")
-def testar_conexao(conector: ConnectorIn):
+CONECTOR_NAO_ENCONTRADO = "Conector não encontrado"
+
+
+def get_collection():
+    return conectores_collection
+
+def _testar_conexao(conector: ConnectorIn, acao: str):
+    logger.info(f"🔍 Testando conexão antes de {acao} conector '{conector.nome}'")
     try:
-        if testar_conexao_postgres(conector):
-            return {"mensagem": "Conexão bem sucedida"}
+        if not testar_conexao_postgres(conector):
+            raise HTTPException(
+                status_code=400,
+                detail="❌ Falha no teste de conexão. Verifique os dados fornecidos."
+            )
+        logger.info(f"✅ Teste de conexão bem-sucedido para '{conector.nome}'")
     except Exception as e:
-        logger.error(f"Erro na conexão: {e}")
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.error(f"❌ Erro no teste de conexão para '{conector.nome}': {e}")
+        raise HTTPException(
+            status_code=400,
+            detail=f"❌ Erro na conexão: {str(e)}"
+        )
 
-@router.post("/connectors/", response_model=ConnectorOut)
-def cadastrar_conector(conector: ConnectorIn):
-    if not testar_conexao_postgres(conector):
-        raise HTTPException(status_code=400, detail="Não foi possível conectar com os dados fornecidos")
-
-    doc = conector.dict()
-    doc["senha"] = encrypt_password(doc["senha"])
-    crud.insert_conector(doc, conectores_collection)
-    logger.info(f"Conector '{conector.nome}' cadastrado com sucesso")
-    return conector
-
-@router.get("/connectors/", response_model=list[ConnectorOut])
-def listar_conectores():
-    conectores = crud.get_conectores(conectores_collection)
-    for c in conectores:
-        c.pop("_id", None)
-        c.pop("senha", None)
-    return conectores
-
-@router.get("/connectors/{nome}", response_model=ConnectorOut)
-def buscar_conector(nome: str):
-    conector = crud.get_conector_por_nome(nome, conectores_collection)
-    if not conector:
-        raise HTTPException(status_code=404, detail="Conector não encontrado")
+def _remover_campos_sensiveis(conector: dict) -> dict:
+    conector = dict(conector)
     conector.pop("_id", None)
     conector.pop("senha", None)
     return conector
 
+@router.post("/connectors/", response_model=ConnectorCreateResponse)
+def cadastrar_conector(conector: ConnectorIn, collection=Depends(get_collection)):
+    """
+    Cadastra um novo conector PostgreSQL.
+    IMPORTANTE: Testa a conexão automaticamente antes de cadastrar.
+    Se a conexão falhar, o cadastro não será realizado.
+    """
+    conector_existente = crud.get_conector_por_nome(conector.nome, collection)
+    if conector_existente:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Já existe um conector com o nome '{conector.nome}'"
+        )
+    _testar_conexao(conector, "cadastrar")
+    try:
+        doc = conector.dict()
+        doc["senha"] = encrypt_password(doc["senha"])
+        crud.insert_conector(doc, collection)
+        logger.info(f"✅ Conector '{conector.nome}' cadastrado com sucesso")
+        return ConnectorCreateResponse(
+            success=True,
+            message="✅ Conector cadastrado com sucesso!",
+            connector_name=conector.nome,
+            connection_tested=True
+        )
+    except Exception as e:
+        logger.error(f"❌ Erro ao cadastrar conector '{conector.nome}': {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro interno ao cadastrar conector: {str(e)}"
+        )
+
+@router.get("/connectors/", response_model=List[ConnectorOut])
+def listar_conectores(collection=Depends(get_collection)):
+    """
+    Lista todos os conectores cadastrados
+    """
+    conectores = crud.get_conectores(collection)
+    return [_remover_campos_sensiveis(c) for c in conectores]
+
+@router.get("/connectors/{nome}", response_model=ConnectorOut)
+def buscar_conector(nome: str, collection=Depends(get_collection)):
+    """
+    Busca um conector específico pelo nome
+    """
+    conector = crud.get_conector_por_nome(nome, collection)
+    if not conector:
+        raise HTTPException(status_code=404, detail=CONECTOR_NAO_ENCONTRADO)
+    return _remover_campos_sensiveis(conector)
+
 @router.put("/connectors/{nome}", response_model=MessageResponse)
-def atualizar_conector(nome: str, conector: ConnectorIn):
-    doc = conector.dict()
-    doc["senha"] = encrypt_password(doc["senha"])
-    atualizado = crud.update_conector(nome, doc, conectores_collection)
-    if not atualizado:
-        raise HTTPException(status_code=404, detail="Conector não encontrado")
-    return {"message": "Conector atualizado com sucesso"}
+def atualizar_conector(nome: str, conector: ConnectorIn, collection=Depends(get_collection)):
+    """
+    Atualiza um conector existente.
+    IMPORTANTE: Testa a conexão automaticamente antes de atualizar.
+    """
+    conector_existente = crud.get_conector_por_nome(nome, collection)
+    if not conector_existente:
+        raise HTTPException(status_code=404, detail=CONECTOR_NAO_ENCONTRADO)
+    _testar_conexao(conector, "atualizar")
+    try:
+        doc = conector.dict()
+        doc["senha"] = encrypt_password(doc["senha"])
+        atualizado = crud.update_conector(nome, doc, collection)
+        if atualizado:
+            logger.info(f"✅ Conector '{nome}' atualizado com sucesso")
+            return {"message": "✅ Conector atualizado com sucesso!"}
+        else:
+            raise HTTPException(status_code=500, detail="Erro ao atualizar conector")
+    except Exception as e:
+        logger.error(f"❌ Erro ao atualizar conector '{nome}': {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro interno ao atualizar conector: {str(e)}"
+        )
 
 @router.delete("/connectors/{nome}", response_model=MessageResponse)
-def remover_conector(nome: str):
-    removido = crud.delete_conector(nome, conectores_collection)
+def remover_conector(nome: str, collection=Depends(get_collection)):
+    """
+    Remove um conector pelo nome
+    """
+    removido = crud.delete_conector(nome, collection)
     if not removido:
-        raise HTTPException(status_code=404, detail="Conector não encontrado")
-    return {"message": "Conector removido com sucesso"}
+        raise HTTPException(status_code=404, detail=CONECTOR_NAO_ENCONTRADO)
+    logger.info(f"✅ Conector '{nome}' removido com sucesso")
+    return {"message": "✅ Conector removido com sucesso!"}

@@ -1,0 +1,9 @@
+{
+    "nome_schema": "public",
+    "tabela1": {
+        "columns": [
+            {"column": "id", "type": "integer", "is_primary_key": false, "is_foreign_key": false, "nullable": "NO"},
+            {"column": "nome", "type": "text", "is_primary_key": false, "is_foreign_key": false, "nullable": "NO"}
+        ]
+    }
+} 

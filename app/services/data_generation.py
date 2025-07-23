@@ -20,6 +20,9 @@ SQL_TYPE_TO_FAKE = {
     'boolean': lambda: fake.boolean(),
 }
 
+CHARACTER_VARYING = 'character varying'
+TIMESTAMP_WO_TZ = 'timestamp without time zone'
+
 def extract_check_values(expression: str):
     # ARRAY['A', 'B', ...]
     match = re.search(r"ARRAY\[(.*?)\]", expression)
@@ -70,32 +73,27 @@ def extract_length_equals_constraint(expression: str):
         return int(match.group(1))
     return None
 
-def get_fake_value(col: dict) -> Any:
-    # Se houver check_constraint, tente extrair os valores permitidos
-    if col.get('check_constraint') and 'expression' in col['check_constraint']:
-        expr = col['check_constraint']['expression']
-        # 1. Valores permitidos (ARRAY/IN)
-        allowed = extract_check_values(expr)
-        if allowed:
-            return random.choice(allowed)
-        # 2. Booleanos
-        bool_vals = extract_boolean_constraint(expr)
-        if bool_vals:
-            return random.choice(bool_vals)
-        # 3. Limites numéricos
-        min_val = extract_numeric_constraint(expr)
-        if min_val is not None and col['type'] in ('integer', 'numeric'):
-            return random.randint(min_val, min_val + 1000)
-        # 4. Comprimento fixo
-        length_eq = extract_length_equals_constraint(expr)
-        if length_eq and col['type'] in ('character varying', 'character'):
-            # Se o nome da coluna indicar cartão, gere só números
-            if 'cartao' in col['column']:
-                return fake.numerify('#' * length_eq)
-            # Caso contrário, gere string alfanumérica
-            return fake.bothify('?' * length_eq)
+def _fake_value_from_check_constraint(col: dict) -> Any:
+    expr = col['check_constraint']['expression']
+    allowed = extract_check_values(expr)
+    if allowed:
+        return random.choice(allowed)
+    bool_vals = extract_boolean_constraint(expr)
+    if bool_vals:
+        return random.choice(bool_vals)
+    min_val = extract_numeric_constraint(expr)
+    if min_val is not None and col['type'] in ('integer', 'numeric'):
+        return random.randint(min_val, min_val + 1000)
+    length_eq = extract_length_equals_constraint(expr)
+    if length_eq and col['type'] in (CHARACTER_VARYING, 'character'):
+        if 'cartao' in col['column']:
+            return fake.numerify('#' * length_eq)
+        return fake.bothify('?' * length_eq)
+    return None
+
+def _fake_value_from_type(col: dict) -> Any:
     t = col['type']
-    if t == 'character varying':
+    if t == CHARACTER_VARYING:
         length = col.get('length') or 20
         length = max(1, int(length))
         return fake.pystr(min_chars=length, max_chars=length)
@@ -103,14 +101,23 @@ def get_fake_value(col: dict) -> Any:
         length = col.get('length') or 1
         length = max(1, int(length))
         return fake.pystr(min_chars=length, max_chars=length)
-    if t in ('character varying', 'character', 'text'):
+    if t in (CHARACTER_VARYING, 'character', 'text'):
         length = col.get('length') or 10
         try:
             length = int(length)
         except Exception:
             length = 10
-        value = fake.pystr(min_chars=length, max_chars=length)
+        return fake.pystr(min_chars=length, max_chars=length)
     return SQL_TYPE_TO_FAKE.get(t, lambda: None)()
+
+def get_fake_value(col: dict) -> Any:
+    # 1. Tenta gerar valor a partir de check_constraint
+    if col.get('check_constraint') and 'expression' in col['check_constraint']:
+        value = _fake_value_from_check_constraint(col)
+        if value is not None:
+            return value
+    # 2. Gera valor baseado no tipo
+    return _fake_value_from_type(col)
 
 
 def topological_sort_tables(schema_metadata: Dict[str, Any]) -> List[str]:
@@ -148,16 +155,78 @@ def get_max_pk_value(conn_params, schema, table, pk_col):
         return 0
 
 
+def _get_pk_value(table, col, idx, pk_start_vals):
+    if col['type'] in ('integer', 'bigint'):
+        start_val = pk_start_vals.get((table, col['column']), 0)
+        return start_val + idx + 1
+    return get_fake_value(col)
+
+def _get_fk_value(col, data):
+    ref_table = col['references']['table']
+    ref_col = col['references']['column']
+    ref_vals = [r[ref_col] for r in data.get(ref_table, [])]
+    return random.choice(ref_vals) if ref_vals else None
+
+def _get_not_null_fallback(col, idx):
+    t = col['type']
+    if t in (CHARACTER_VARYING, 'character', 'text'):
+        length = col.get('length') or 10
+        try:
+            length = int(length)
+        except Exception:
+            length = 10
+        return fake.pystr(min_chars=length, max_chars=length)
+    elif t in ('integer', 'numeric', 'bigint'):
+        return idx + 1
+    elif t == 'date':
+        return fake.date()
+    elif t == TIMESTAMP_WO_TZ:
+        return fake.date_time_this_decade().strftime('%Y-%m-%d %H:%M:%S')
+    elif t == 'boolean':
+        return True
+    return None
+
+def _get_not_null_final_fallback(col, idx):
+    t = col['type']
+    if t in (CHARACTER_VARYING, 'character', 'text'):
+        return 'X'
+    elif t in ('integer', 'numeric', 'bigint'):
+        return idx + 1
+    elif t == 'date':
+        return '2000-01-01'
+    elif t == TIMESTAMP_WO_TZ:
+        return '2000-01-01 00:00:00'
+    elif t == 'boolean':
+        return True
+    return None
+
+def _generate_row(table, table_meta, idx, pk_start_vals, data):
+    row = {}
+    for col in table_meta['columns']:
+        value = None
+        if col['is_primary_key']:
+            value = _get_pk_value(table, col, idx, pk_start_vals)
+            row[col['column']] = value
+        elif col['is_foreign_key'] and col['references']:
+            value = _get_fk_value(col, data)
+            row[col['column']] = value
+        else:
+            value = get_fake_value(col)
+            if col.get('nullable', 'YES') == 'NO' and value is None:
+                value = _get_not_null_fallback(col, idx)
+            if col.get('nullable', 'YES') == 'NO' and value is None:
+                value = _get_not_null_final_fallback(col, idx)
+            row[col['column']] = value
+    return row
+
 def generate_fake_data(schema_metadata: Dict[str, Any], rows_per_table: int = 10, conn_params: Optional[dict] = None) -> Dict[str, List[Dict[str, Any]]]:
     """
     Gera dados fake para cada tabela do schema, respeitando FKs e constraints básicas.
     Se conn_params for fornecido, busca o maior valor atual das PKs inteiras para evitar duplicidade.
     """
     data = {}
-    fk_cache = defaultdict(list)  # Para popular FKs com valores já gerados
     table_order = topological_sort_tables(schema_metadata)
     pk_start_vals = {}
-    # Descobrir valor inicial das PKs inteiras
     if conn_params:
         nome_schema = schema_metadata.get('nome_schema', 'public')
         for table in table_order:
@@ -173,59 +242,7 @@ def generate_fake_data(schema_metadata: Dict[str, Any], rows_per_table: int = 10
         table_meta = schema_metadata[table]
         rows = []
         for idx in range(rows_per_table):
-            row = {}
-            for col in table_meta['columns']:
-                value = None
-                if col['is_primary_key']:
-                    # Para PKs inteiros, gere um valor incremental a partir do maior valor existente
-                    if col['type'] in ('integer', 'bigint'):
-                        start_val = pk_start_vals.get((table, col['column']), 0)
-                        value = start_val + idx + 1
-                    else:
-                        value = get_fake_value(col)
-                    row[col['column']] = value
-                    if col['is_foreign_key']:
-                        fk_cache[(table, col['column'])].append(value)
-                elif col['is_foreign_key'] and col['references']:
-                    ref_table = col['references']['table']
-                    ref_col = col['references']['column']
-                    ref_vals = [r[ref_col] for r in data.get(ref_table, [])]
-                    value = random.choice(ref_vals) if ref_vals else None
-                    row[col['column']] = value
-                else:
-                    value = get_fake_value(col)
-                    # Se NOT NULL e value é None, gera valor padrão
-                    if col.get('nullable', 'YES') == 'NO' and value is None:
-                        t = col['type']
-                        if t in ('character varying', 'character', 'text'):
-                            length = col.get('length') or 10
-                            try:
-                                length = int(length)
-                            except Exception:
-                                length = 10
-                            value = fake.pystr(min_chars=length, max_chars=length)
-                        elif t in ('integer', 'numeric', 'bigint'):
-                            value = idx + 1
-                        elif t == 'date':
-                            value = fake.date()
-                        elif t == 'timestamp without time zone':
-                            value = fake.date_time_this_decade().strftime('%Y-%m-%d %H:%M:%S')
-                        elif t == 'boolean':
-                            value = True
-                    # Fallback final
-                    if col.get('nullable', 'YES') == 'NO' and value is None:
-                        t = col['type']
-                        if t in ('character varying', 'character', 'text'):
-                            value = 'X'
-                        elif t in ('integer', 'numeric', 'bigint'):
-                            value = idx + 1
-                        elif t == 'date':
-                            value = '2000-01-01'
-                        elif t == 'timestamp without time zone':
-                            value = '2000-01-01 00:00:00'
-                        elif t == 'boolean':
-                            value = True
-                    row[col['column']] = value
+            row = _generate_row(table, table_meta, idx, pk_start_vals, data)
             rows.append(row)
         data[table] = rows
     return data

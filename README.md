@@ -1,8 +1,8 @@
 # 🚀 API Dicionário de Dados
 
-> ✨ **Sistema de Gerenciamento de Conectores e Schemas de Banco de Dados**
+> ✨ **Sistema de Gerenciamento de Conectores, Schemas e Geração de Dados Sintéticos**
 
-Uma API REST moderna construída com FastAPI para gerenciar conectores de banco de dados PostgreSQL e schemas de dados de forma segura e eficiente.
+Uma API REST moderna construída com FastAPI para gerenciar conectores de banco de dados PostgreSQL, schemas de dados e gerar dados sintéticos de forma segura e eficiente.
 
 ## 📋 Índice
 
@@ -15,16 +15,19 @@ Uma API REST moderna construída com FastAPI para gerenciar conectores de banco 
 - [📁 Estrutura do Projeto](#-estrutura-do-projeto)
 - [🔐 Segurança](#-segurança)
 - [🧪 Funcionalidades](#-funcionalidades)
+- [🏥 Monitoramento](#-monitoramento)
 
 ## 🎯 Sobre o Projeto
 
-Esta aplicação é um **Dicionário de Dados** que permite:
+Esta aplicação é um **Dicionário de Dados Avançado** que permite:
 
 - 🔌 **Gerenciar Conectores**: Cadastrar, testar e gerenciar conexões com bancos PostgreSQL
 - 📊 **Gerenciar Schemas**: Upload, validação e gestão de schemas de dados em formato JSON
-- 🔒 **Segurança**: Criptografia de senhas e validação de dados
+- 🎲 **Gerar Dados Sintéticos**: Criação automática de dados fake baseados nos schemas
+- 🔒 **Segurança**: Criptografia de senhas e validação robusta de dados
 - 📝 **Documentação Automática**: Swagger/OpenAPI integrado
-- 🗄️ **Persistência**: Armazenamento em MongoDB
+- 🗄️ **Persistência**: Armazenamento em MongoDB com validação de conexão
+- 🏥 **Monitoramento**: Health checks e logs estruturados
 
 ## 🛠️ Tecnologias Utilizadas
 
@@ -38,6 +41,7 @@ Esta aplicação é um **Dicionário de Dados** que permite:
 | 📋 **Pydantic** | - | Validação de dados |
 | 🎨 **Uvicorn** | - | Servidor ASGI |
 | 📄 **JSON Schema** | - | Validação de schemas |
+| 🎲 **Faker** | - | Geração de dados sintéticos |
 
 ## 🏗️ Arquitetura do Projeto
 
@@ -55,18 +59,54 @@ webapi-dicionario/
 │   ├── 📁 services/               # Lógica de negócio
 │   └── 📁 utils/                  # Utilitários
 ├── 📄 requirements.txt            # Dependências Python
+├── 📄 .env                        # Variáveis de ambiente
+├── 📁 logs/                       # Logs da aplicação
 └── 📖 README.md                   # Este arquivo
 ```
 
 ## 🚀 Como Executar
 
-### 📋 Pré-requisitos
+### 🐳 **Usando Docker Compose (Recomendado)**
 
+#### 📋 Pré-requisitos
+- Docker e Docker Compose instalados
+- Git
+
+#### 🔧 Instalação Rápida
+
+1. **Clone o repositório**
+```bash
+git clone <url-do-repositorio>
+cd webapi-dicionario
+```
+
+#### 🛠️ Comandos Docker Compose
+
+```bash
+# Iniciar aplicação
+docker-compose up -d --build
+
+# Ver logs
+docker-compose logs -f
+
+# Parar aplicação
+docker-compose down
+
+# Ver status
+docker-compose ps
+
+# Reiniciar
+docker-compose restart
+```
+
+### 🐍 **Execução Local (Desenvolvimento)**
+
+#### 📋 Pré-requisitos
 - Python 3.8 ou superior
 - MongoDB instalado e rodando
 - PostgreSQL (para testes de conexão)
 
-### 🔧 Instalação
+#### 🔧 Instalação
 
 1. **Clone o repositório**
 ```bash
@@ -96,11 +136,12 @@ pip install -r requirements.txt
 5. **Configure as variáveis de ambiente**
 ```bash
 # Crie um arquivo .env na raiz do projeto
-MONGO_URL=mongodb://localhost:27017
+MONGO_URL=mongodb://root:example@localhost:27017/
 DB_NAME=dicionario_dados
 MONGO_COLLECTION_SCHEMAS=schemas
 MONGO_COLLECTION_CONECTORES=conectores
-CRYPTO_KEY=sua_chave_secreta_aqui
+MONGO_COLLECTION_DADOS_SINTETICOS=dados_sinteticos
+CRYPTO_KEY=sua_chave_secreta_aqui_minimo_32_caracteres
 ```
 
 6. **Execute a aplicação**
@@ -115,15 +156,20 @@ Após iniciar a aplicação, acesse:
 - 📖 **Swagger UI**: http://localhost:8000/docs
 - 📄 **ReDoc**: http://localhost:8000/redoc
 
+### 🏥 Health Check 
+
+| Método | Endpoint | Descrição |
+|--------|----------|-----------|
+| `GET` | `/hc` | Status da aplicação e conexão com MongoDB |
+
 ### 🔌 Endpoints de Conectores
 
 | Método | Endpoint | Descrição |
 |--------|----------|-----------|
-| `POST` | `/dicionariodados/connectors/test` | Testa conexão com PostgreSQL |
-| `POST` | `/dicionariodados/connectors/` | Cadastra novo conector |
+| `POST` | `/dicionariodados/connectors/` | Cadastra novo conector (testa conexão automaticamente) |
 | `GET` | `/dicionariodados/connectors/` | Lista todos os conectores |
 | `GET` | `/dicionariodados/connectors/{nome}` | Busca conector por nome |
-| `PUT` | `/dicionariodados/connectors/{nome}` | Atualiza conector |
+| `PUT` | `/dicionariodados/connectors/{nome}` | Atualiza conector (testa conexão automaticamente) |
 | `DELETE` | `/dicionariodados/connectors/{nome}` | Remove conector |
 
 ### 📊 Endpoints de Schemas
@@ -137,19 +183,51 @@ Após iniciar a aplicação, acesse:
 | `GET` | `/dicionariodados/schemas/` | Lista todos os schemas |
 | `GET` | `/dicionariodados/schemas/{nome_schema}` | Obtém schema específico |
 
+### 🎲 Endpoints de Geração de Dados
+
+| Método | Endpoint | Descrição |
+|--------|----------|-----------|
+| `POST` | `/dicionariodados/gerar-dados/{nome_schema}` | Gera e insere dados sintéticos |
+
 ## 🔧 Configuração
+
+### 🐳 **Docker Compose**
+
+A aplicação inclui configuração completa do Docker Compose com:
+
+- **MongoDB**: Banco de dados principal
+- **PostgreSQL**: Para testes de conexão
+- **FastAPI**: Aplicação principal
+- **Health Checks**: Monitoramento automático
+- **Volumes**: Persistência de dados
+
+#### 📁 Arquivos Docker
+- `docker-compose.yaml`: Configuração dos serviços
+- `Dockerfile`: Build da aplicação
+- `.dockerignore`: Otimização da build
+- `docker-run.sh`: Script de gerenciamento (Linux/Mac)
+- `docker-run.ps1`: Script de gerenciamento (Windows)
 
 ### 🔐 Variáveis de Ambiente
 
 ```env
 # MongoDB
-MONGO_URL=mongodb://localhost:27017
+MONGO_URL=mongodb://root:example@localhost:27017/
 DB_NAME=dicionario_dados
 MONGO_COLLECTION_SCHEMAS=schemas
 MONGO_COLLECTION_CONECTORES=conectores
+MONGO_COLLECTION_DADOS_SINTETICOS=dados_sinteticos
 
-# Criptografia
-CRYPTO_KEY=sua_chave_secreta_aqui
+# Criptografia (OBRIGATÓRIO)
+CRYPTO_KEY=sua_chave_secreta_aqui_minimo_32_caracteres
+```
+
+### 🔑 Gerando Chave Criptográfica
+
+Para gerar uma chave segura:
+
+```bash
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
 ```
 
 ## 📁 Estrutura Detalhada do Projeto
@@ -157,21 +235,24 @@ CRYPTO_KEY=sua_chave_secreta_aqui
 ### 🚀 **app/main.py**
 - Ponto de entrada da aplicação FastAPI
 - Configuração de rotas e documentação
+- Health check endpoint
 - Redirecionamento automático para `/docs`
 
 ### 📁 **app/api/v1/endpoints/**
 - **connectors.py**: Endpoints para gerenciamento de conectores
 - **schemas.py**: Endpoints para gerenciamento de schemas
+- **generate_data.py**: Endpoints para geração de dados sintéticos
 
 ### 📁 **app/core/**
-- **config.py**: Configurações da aplicação
-- **logging.py**: Configuração de logs
+- **config.py**: Configurações da aplicação com validação
+- **logging.py**: Configuração de logs com rotação
 
 ### 📁 **app/db/**
-- **mongo.py**: Conexão com MongoDB
+- **mongo.py**: Conexão com MongoDB com tratamento de erros
 - **crud/**: Operações de banco de dados
   - **connectors.py**: CRUD para conectores
   - **schemas.py**: CRUD para schemas
+  - **dados_sinteticos.py**: CRUD para dados sintéticos
 
 ### 📁 **app/models/**
 - **domain/**: Modelos de domínio
@@ -182,9 +263,10 @@ CRYPTO_KEY=sua_chave_secreta_aqui
 ### 📁 **app/services/**
 - **connector_service.py**: Lógica de teste de conexão PostgreSQL
 - **schema_service.py**: Validação de schemas JSON
+- **data_generation.py**: Geração de dados sintéticos
 
 ### 📁 **app/utils/**
-- **crypto.py**: Criptografia de senhas
+- **crypto.py**: Criptografia de senhas com validação
 - **json_validator.py**: Validação de JSON
 
 ## 🔐 Segurança
@@ -192,7 +274,8 @@ CRYPTO_KEY=sua_chave_secreta_aqui
 ### 🔒 Criptografia de Senhas
 - Utiliza **Fernet** (cryptography) para criptografia
 - Senhas são criptografadas antes de salvar no banco
-- Chave de criptografia configurável via variável de ambiente
+- Chave de criptografia obrigatória via variável de ambiente
+- Validação de chave na inicialização
 
 ### ✅ Validação de Dados
 - **Pydantic** para validação de entrada
@@ -200,14 +283,34 @@ CRYPTO_KEY=sua_chave_secreta_aqui
 - Validação de schemas JSON
 - Sanitização de dados
 
+## 🏥 Monitoramento
+
+### 📊 Health Check
+- Endpoint `/health` para verificar status da aplicação
+- Teste de conexão com MongoDB
+- Status detalhado do sistema
+
+### 📝 Logging
+- Logs estruturados com rotação automática
+- Arquivo de logs em `logs/app.log`
+- Tamanho máximo de 5MB por arquivo
+- Mantém 3 backups
+
+### ⚠️ Tratamento de Erros
+- Validação de configuração na inicialização
+- Tratamento robusto de erros de conexão
+- Logs informativos para debugging
+
 ## 🧪 Funcionalidades
 
 ### 🔌 **Gerenciamento de Conectores**
-- ✅ Cadastro de conectores PostgreSQL
-- ✅ Teste de conexão em tempo real
-- ✅ Validação de credenciais
+- ✅ Cadastro de conectores PostgreSQL com teste de conexão obrigatório
+- ✅ Atualização com validação de conexão automática
+- ✅ Validação de credenciais em tempo real
 - ✅ Criptografia de senhas
 - ✅ CRUD completo (Create, Read, Update, Delete)
+- ✅ Verificação de duplicatas por nome
+- ✅ Respostas detalhadas com status de conexão
 
 ### 📊 **Gerenciamento de Schemas**
 - ✅ Upload de schemas via arquivo JSON
@@ -216,12 +319,48 @@ CRYPTO_KEY=sua_chave_secreta_aqui
 - ✅ Suporte a chaves primárias e estrangeiras
 - ✅ Constraints e descrições
 
+### 🎲 **Geração de Dados Sintéticos**
+- ✅ Geração automática de dados fake
+- ✅ Baseado na estrutura dos schemas
+- ✅ Inserção direta no PostgreSQL
+- ✅ Geração de scripts SQL
+- ✅ Persistência de scripts gerados
+
 ### 🔍 **Recursos Adicionais**
 - ✅ Documentação automática (Swagger/OpenAPI)
-- ✅ Logs estruturados
-- ✅ Tratamento de erros
+- ✅ Logs estruturados com rotação
+- ✅ Health checks
+- ✅ Tratamento robusto de erros
 - ✅ Validação de entrada
 - ✅ Respostas padronizadas
+
+## 🚀 Exemplo de Uso
+
+### 1. Cadastrar um Conector (teste automático obrigatório)
+```bash
+curl -X POST "http://localhost:8000/dicionariodados/connectors/" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "nome": "meu_banco",
+    "host": "localhost",
+    "porta": 5432,
+    "banco": "teste",
+    "usuario": "postgres",
+    "senha": "minha_senha"
+  }'
+```
+
+### 2. Upload de Schema
+```bash
+curl -X POST "http://localhost:8000/dicionariodados/schemas/upload" \
+  -F "nome_schema=meu_schema" \
+  -F "file=@schema.json"
+```
+
+### 3. Gerar Dados Sintéticos
+```bash
+curl -X POST "http://localhost:8000/dicionariodados/gerar-dados/meu_schema?conector_nome=meu_banco&rows_per_table=100"
+```
 
 ## 🤝 Contribuição
 
@@ -238,10 +377,5 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 ## 👨‍💻 Autor
 
 **Geração de Dados**
-- 📧 Email: [seu-email@exemplo.com]
-- 🔗 LinkedIn: [seu-linkedin]
-- 🐙 GitHub: [seu-github]
-
----
-
-⭐ **Se este projeto te ajudou, considere dar uma estrela!** ⭐
+- 📧 Email: [gabrielterres199@gmail.com]
+- 🐙 GitHub: [https://github.com/gabaws]
